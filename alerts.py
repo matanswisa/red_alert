@@ -3,6 +3,9 @@ import json
 import datetime
 import time
 
+
+ids_list = []
+
 def orderText(text):
     return " ".join([txt[::-1] for txt in text.split(" ")][::-1])
 
@@ -48,21 +51,33 @@ def readRecentAlerts():
         data = json.load(file)
     return data
 
+last_alerts_id = 0
+"""
+Parameters:
+alerts: recent json alerts object which recived from last get request
+About the function:
+The function print all the recived alerts. First it's reading the last data from json file and then it's checking if the id's are different , 
+if they're differents, then the function will print all the alerts and save them to the json file.
+"""
 def printAlerts(alerts):
     if alerts:
-        print(datetime.datetime.now().time())
-        for alert in alerts:
-            print(alert['data'])
-    
+        current_alert_id = alerts['id']
+        if current_alert_id in ids_list:
+            return None
+        places = alerts['data']
+        print('All recent alerts at time {0}:'.format(datetime.datetime.now()))
+        for place in places:
+            print(orderText(place))
+        ids_list.append(alerts['id'])
+        
+            
 def getAlerts():
-    json_data = [] 
     while True:            
-        r = requests.get("https://www.oref.org.il/WarningMessages/History/AlertsHistory.json")
-        if not r.text:
-            break
-        json_data = json.loads(r.text)
-        result = filterAlertsByDateTime(json_data)
-        print("Alerts:")
-        printAlerts(result)
-        time.sleep(3)
+        r = requests.get("https://www.oref.org.il/WarningMessages/alert/alerts.json",
+            headers={'X-Requested-With': 'XMLHttpRequest','Referer': 'https://www.oref.org.il/12402-he/Pakar.aspx'})
+        if r.text:
+            result = r.json()
+            printAlerts(result)
+        time.sleep(0.5)
+
 getAlerts()
